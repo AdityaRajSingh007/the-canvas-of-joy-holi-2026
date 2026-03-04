@@ -19,7 +19,7 @@ export default function App() {
     // OPTIMIZATION 1: Scale down the mask canvas significantly.
     // Generating a base64 image from a full-size canvas every frame is extremely slow.
     // By scaling it down to 15%, we process ~44x fewer pixels, making toDataURL near-instant.
-    const MASK_SCALE = 0.15; 
+    const MASK_SCALE = 0.15;
 
     const colors = [
       { r: 233, g: 30, b: 99 },   // Pink
@@ -31,6 +31,7 @@ export default function App() {
 
     let splashes: OrganicSplash[] = [];
     let animationFrameId: number;
+    let isMaskUpdating = false;
 
     function resize() {
       const w = window.innerWidth;
@@ -41,7 +42,7 @@ export default function App() {
       maskCanvas.height = h * MASK_SCALE;
       mCtx!.fillStyle = 'black';
       mCtx!.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
-      updateMask();
+      updateMaskDoubleBuffered();
     }
 
     class OrganicSplash {
@@ -57,7 +58,7 @@ export default function App() {
       timer: number;
       decay: number;
       points: { angle: number, variance: number, currentDist: number }[];
-      drips: { angle: number, width: number, length: number, maxLen: number, speed: number, path: {x: number, y: number}[] }[];
+      drips: { angle: number, width: number, length: number, maxLen: number, speed: number, path: { x: number, y: number }[] }[];
       finished: boolean;
 
       constructor(x: number, y: number) {
@@ -141,7 +142,7 @@ export default function App() {
           targetCtx.fillStyle = 'white';
           targetCtx.strokeStyle = 'white';
           // Scale down the blur radius proportionally for the mask to keep the clearing tight
-          targetCtx.filter = `blur(${Math.max(1, 20 * MASK_SCALE)}px)`; 
+          targetCtx.filter = `blur(${Math.max(1, 20 * MASK_SCALE)}px)`;
         } else {
           const alpha = Math.max(0, this.life * this.opacity);
           targetCtx.fillStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${alpha})`;
@@ -200,11 +201,21 @@ export default function App() {
       }
     }
 
-    function updateMask() {
-      if (!mistyLayer) return;
-      const maskUrl = maskCanvas.toDataURL(); 
-      mistyLayer.style.webkitMaskImage = `url(${maskUrl})`;
-      mistyLayer.style.maskImage = `url(${maskUrl})`;
+    function updateMaskDoubleBuffered() {
+      if (!mistyLayer || isMaskUpdating) return;
+
+      isMaskUpdating = true;
+      const maskUrl = maskCanvas.toDataURL();
+
+      const img = new Image();
+      img.onload = () => {
+        if (mistyLayer) {
+          mistyLayer.style.webkitMaskImage = `url(${maskUrl})`;
+          mistyLayer.style.maskImage = `url(${maskUrl})`;
+        }
+        isMaskUpdating = false;
+      };
+      img.src = maskUrl;
     }
 
     function handleInteraction(x: number, y: number) {
@@ -226,12 +237,13 @@ export default function App() {
           }
           return false;
         });
-        
-        // OPTIMIZATION 2: Throttle mask updates.
-        // We don't need to update the CSS mask at 60fps. Updating it every 3rd frame (~20fps)
-        // is smooth enough for a fading blur effect and saves massive CPU/GPU layout thrashing.
-        if (maskUpdated && frameCount % 3 === 0) {
-          updateMask();
+
+        // OPTIMIZATION 2: Double-buffered adaptive throttling.
+        // Instead of a fixed frame throttle, we only update the mask once the 
+        // browser has fully decoded the previous one. This eliminates flickering
+        // and scales performance across devices.
+        if (maskUpdated) {
+          updateMaskDoubleBuffered();
         }
       }
       frameCount++;
@@ -247,7 +259,7 @@ export default function App() {
     canvas.addEventListener('mousedown', onMouseDown);
     canvas.addEventListener('touchstart', onTouchStart, { passive: false });
     window.addEventListener('resize', resize);
-    
+
     resize();
     animate();
 
@@ -262,7 +274,7 @@ export default function App() {
   return (
     <div className="h-screen w-full relative select-none bg-[#FDFBF7] overflow-hidden cursor-crosshair touch-none">
       {/* Paper Texture */}
-      <div 
+      <div
         className="fixed inset-0 opacity-30 z-[1] mix-blend-multiply bg-cover bg-no-repeat"
         style={{ backgroundImage: 'url(https://lh3.googleusercontent.com/aida-public/AB6AXuDoC5lkcD5CkaHT_Ecq92QoS0Dkt-F8gnMoV_IeL2PbRjthtTPCivYksqMj4HtNZHZ8d5bqHuJMBdCsrjvFNC3mxQNarOvLprVhWY9U1rPzZ6F6jD3j0OCI7NjKeh1NFh0jbeG8bMRGef9K38Htu7MJVGYAECaQxqBcdGq96U3PDIMohLZ3VLVuK9jMLGoviFOK7DZwjAOLILYDDltHz79YenBC0kHcOCpz_GSjDsq3nzcN_Fsit-cxG_0rzXa7PkOTLg7tZ3lv4Mw)' }}
       ></div>
@@ -274,7 +286,7 @@ export default function App() {
             The Canvas of Joy
           </span>
           <div className="flex flex-col items-center">
-            <h1 
+            <h1
               className="text-6xl sm:text-8xl md:text-9xl lg:text-[10rem] font-bold leading-tight tracking-normal text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-orange-400 to-purple-500 pb-2"
               style={{ fontFamily: '"Comic Sans MS", "Comic Sans", cursive' }}
             >
@@ -288,7 +300,7 @@ export default function App() {
             "Let the vibrant pigments of Gulal find their way into the blank spaces of your life, painting a masterpiece of memories."
           </p>
         </div>
-        
+
         <div className="absolute bottom-16 left-0 right-0 flex flex-col items-center space-y-6">
           <div className="flex flex-col items-center">
             <p className="font-script text-3xl sm:text-4xl text-[#2C241B]">With warmth,</p>
@@ -299,14 +311,14 @@ export default function App() {
       </div>
 
       {/* Misty Layer */}
-      <div 
+      <div
         ref={mistyLayerRef}
         className="fixed inset-0 z-20 bg-[#FDFBF7] pointer-events-none"
-        style={{ 
-          WebkitMaskSize: '100% 100%', 
-          maskSize: '100% 100%', 
-          WebkitMaskRepeat: 'no-repeat', 
-          maskRepeat: 'no-repeat' 
+        style={{
+          WebkitMaskSize: '100% 100%',
+          maskSize: '100% 100%',
+          WebkitMaskRepeat: 'no-repeat',
+          maskRepeat: 'no-repeat'
         }}
       >
         <div className="absolute inset-0 bg-[#FDFBF7]/98 backdrop-blur-[80px]"></div>
@@ -314,7 +326,7 @@ export default function App() {
           <div className="w-full max-w-[90vw] flex flex-col items-center justify-center -mt-20 blur-[10px]">
             <span className="font-sans text-[10px] sm:text-xs md:text-sm tracking-[0.6em] uppercase text-[#2C241B]">The Canvas of Joy</span>
             <div className="flex flex-col items-center">
-              <h1 
+              <h1
                 className="text-6xl sm:text-8xl md:text-9xl lg:text-[10rem] font-bold leading-tight tracking-normal text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-orange-400 to-purple-500 pb-2"
                 style={{ fontFamily: '"Comic Sans MS", "Comic Sans", cursive' }}
               >
@@ -326,8 +338,8 @@ export default function App() {
       </div>
 
       {/* Interaction Canvas */}
-      <canvas 
-        ref={canvasRef} 
+      <canvas
+        ref={canvasRef}
         className="fixed top-0 left-0 w-full h-full z-30 pointer-events-auto"
       />
 
@@ -349,7 +361,7 @@ export default function App() {
             <div className="absolute -bottom-1 -right-1 w-1.5 h-1.5 bg-[#D4AF37]/50 rounded-full"></div>
           </div>
         </div>
-        
+
         <div className="absolute bottom-4 left-0 right-0 flex justify-center">
           <p className="font-sans text-[10px] uppercase tracking-[0.3em] text-[#2C241B] font-bold animate-pulse drop-shadow-md">
             Click to wash the canvas with color
