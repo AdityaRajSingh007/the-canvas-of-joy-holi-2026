@@ -281,13 +281,13 @@ export default function App() {
 
       {/* Clear Layer */}
       <div className="fixed inset-0 z-5 flex flex-col items-center justify-center text-center px-6">
-        <div className="w-full max-w-[90vw] flex flex-col items-center justify-center -mt-20">
-          <span className="font-sans text-[10px] sm:text-xs md:text-sm tracking-[0.6em] uppercase text-[#B63E33] font-bold mb-4 sm:mb-6">
+        <div className="w-full max-w-[90vw] flex flex-col items-center justify-center -mt-10 sm:-mt-20">
+          <span className="font-sans text-[9px] sm:text-[10px] md:text-sm tracking-[0.6em] uppercase text-[#B63E33] font-bold mb-4 sm:mb-6">
             The Canvas of Joy
           </span>
           <div className="flex flex-col items-center">
             <h1
-              className="text-6xl sm:text-8xl md:text-9xl lg:text-[10rem] font-bold leading-tight tracking-normal text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-orange-400 to-purple-500 pb-2"
+              className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-bold leading-tight tracking-normal text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-orange-400 to-purple-500 pb-2"
               style={{ fontFamily: '"Comic Sans MS", "Comic Sans", cursive' }}
             >
               Happy Holi
@@ -296,16 +296,16 @@ export default function App() {
           <div className="my-8 sm:my-12">
             <div className="h-[1px] w-32 sm:w-48 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent"></div>
           </div>
-          <p className="font-sans italic text-lg sm:text-2xl md:text-3xl text-[#8C7B70] font-light max-w-xl md:max-w-3xl mx-auto leading-relaxed px-4">
+          <p className="font-sans italic text-base sm:text-xl md:text-2xl lg:text-3xl text-[#8C7B70] font-light max-w-[85vw] sm:max-w-xl md:max-w-3xl mx-auto leading-relaxed px-4">
             "Let the vibrant pigments of Gulal find their way into the blank spaces of your life, painting a masterpiece of memories."
           </p>
         </div>
 
-        <div className="absolute bottom-16 left-0 right-0 flex flex-col items-center space-y-6">
+        <div className="absolute bottom-10 sm:bottom-12 md:bottom-16 left-0 right-0 flex flex-col items-center space-y-4 sm:space-y-6">
           <div className="flex flex-col items-center">
-            <p className="font-script text-3xl sm:text-4xl text-[#2C241B]">With warmth,</p>
-            <p className="font-serif text-xl sm:text-2xl tracking-[0.2em] text-[#2C241B] font-semibold uppercase">Aditya Raj Singh</p>
-            <p className="font-sans text-[9px] tracking-[0.4em] text-[#B63E33] uppercase font-black">ARS Developers</p>
+            <p className="font-script text-2xl sm:text-4xl text-[#2C241B]">With warmth,</p>
+            <p className="font-serif text-lg sm:text-2xl tracking-[0.2em] text-[#2C241B] font-semibold uppercase">Aditya Raj Singh</p>
+            <p className="font-sans text-[8px] sm:text-[9px] tracking-[0.4em] text-[#B63E33] uppercase font-black">ARS Developers</p>
           </div>
         </div>
       </div>
@@ -323,11 +323,11 @@ export default function App() {
       >
         <div className="absolute inset-0 bg-[#FDFBF7]/98 backdrop-blur-[80px]"></div>
         <div className="fixed inset-0 z-5 flex flex-col items-center justify-center text-center px-6 opacity-20 grayscale pointer-events-none">
-          <div className="w-full max-w-[90vw] flex flex-col items-center justify-center -mt-20 blur-[10px]">
-            <span className="font-sans text-[10px] sm:text-xs md:text-sm tracking-[0.6em] uppercase text-[#2C241B]">The Canvas of Joy</span>
+          <div className="w-full max-w-[90vw] flex flex-col items-center justify-center -mt-10 sm:-mt-20 blur-[10px]">
+            <span className="font-sans text-[9px] sm:text-[10px] md:text-sm tracking-[0.6em] uppercase text-[#2C241B]">The Canvas of Joy</span>
             <div className="flex flex-col items-center">
               <h1
-                className="text-6xl sm:text-8xl md:text-9xl lg:text-[10rem] font-bold leading-tight tracking-normal text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-orange-400 to-purple-500 pb-2"
+                className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-bold leading-tight tracking-normal text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-orange-400 to-purple-500 pb-2"
                 style={{ fontFamily: '"Comic Sans MS", "Comic Sans", cursive' }}
               >
                 Happy Holi
