@@ -77,7 +77,8 @@ export default function App() {
         this.drips = [];
         this.finished = false;
 
-        const numPoints = 20;
+        const isMobile = window.innerWidth < 768;
+        const numPoints = isMobile ? 12 : 20;
         for (let i = 0; i < numPoints; i++) {
           const angle = (i / numPoints) * Math.PI * 2;
           this.points.push({
@@ -87,7 +88,7 @@ export default function App() {
           });
         }
 
-        const numDrips = 7;
+        const numDrips = isMobile ? 4 : 7;
         const sectorWidth = Math.PI * 0.4;
         const sectorStart = Math.PI * 0.5 - sectorWidth / 2;
         for (let i = 0; i < numDrips; i++) {
@@ -96,7 +97,7 @@ export default function App() {
             angle: dripAngle,
             width: 5 + Math.random() * 6,
             length: 0,
-            maxLen: Math.max(window.innerHeight * 0.6, 400) + Math.random() * 200,
+            maxLen: Math.max(window.innerHeight * 0.6, 300) + Math.random() * 200,
             speed: (2.75 + Math.random() * 4.75) * 0.7,
             path: []
           });
@@ -124,6 +125,11 @@ export default function App() {
                 d.path.push({ x: startX, y: startY });
               }
               d.path.push({ x: currentX, y: currentY });
+
+              // OPTIMIZATION: Cap drip path length to prevent O(N) draw bottlenecks
+              if (d.path.length > 60) {
+                d.path.splice(1, 1); // Keep the first point (connection) and the segment history
+              }
             }
           });
         }
@@ -144,10 +150,11 @@ export default function App() {
           // Scale down the blur radius proportionally for the mask to keep the clearing tight
           targetCtx.filter = `blur(${Math.max(1, 20 * MASK_SCALE)}px)`;
         } else {
-          const alpha = Math.max(0, this.life * this.opacity);
+          // OPTIMIZATION: Removed expensive ctx.filter = 'blur(10px)'
+          // Using slightly lower alpha and multiple strokes for "soft" look
+          const alpha = Math.max(0, this.life * this.opacity * 0.8);
           targetCtx.fillStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${alpha})`;
           targetCtx.strokeStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${alpha})`;
-          targetCtx.filter = 'blur(10px)';
         }
 
         targetCtx.beginPath();
@@ -181,15 +188,17 @@ export default function App() {
               targetCtx.strokeStyle = grad;
               targetCtx.fillStyle = grad;
             }
-            targetCtx.beginPath();
-            targetCtx.lineCap = 'round';
-            targetCtx.lineJoin = 'round';
-            targetCtx.lineWidth = d.width;
-            targetCtx.moveTo(d.path[0].x, d.path[0].y);
-            for (let i = 1; i < d.path.length; i++) {
-              targetCtx.lineTo(d.path[i].x, d.path[i].y);
+            if (!isMask) {
+              // OPTIMIZATION: Manual "blur" using multiple strokes is much faster than ctx.filter
+              targetCtx.save();
+              targetCtx.globalAlpha = alpha * 0.3;
+              targetCtx.lineWidth = d.width * 2.5;
+              drawPath(targetCtx, d.path);
+              targetCtx.restore();
             }
-            targetCtx.stroke();
+
+            targetCtx.lineWidth = d.width;
+            drawPath(targetCtx, d.path);
 
             const tip = d.path[d.path.length - 1];
             targetCtx.beginPath();
@@ -199,6 +208,17 @@ export default function App() {
         }
         targetCtx.restore();
       }
+    }
+
+    function drawPath(targetCtx: CanvasRenderingContext2D, path: { x: number, y: number }[]) {
+      targetCtx.beginPath();
+      targetCtx.lineCap = 'round';
+      targetCtx.lineJoin = 'round';
+      targetCtx.moveTo(path[0].x, path[0].y);
+      for (let i = 1; i < path.length; i++) {
+        targetCtx.lineTo(path[i].x, path[i].y);
+      }
+      targetCtx.stroke();
     }
 
     function updateMaskDoubleBuffered() {
@@ -219,6 +239,11 @@ export default function App() {
     }
 
     function handleInteraction(x: number, y: number) {
+      // OPTIMIZATION: Cap splashes to 12 max to prevent performance degradation
+      if (splashes.length >= 12) {
+        const oldest = splashes.find(s => !s.finished);
+        if (oldest) oldest.finished = true;
+      }
       splashes.push(new OrganicSplash(x, y));
     }
 
@@ -276,7 +301,7 @@ export default function App() {
       {/* Paper Texture */}
       <div
         className="fixed inset-0 opacity-30 z-[1] mix-blend-multiply bg-cover bg-no-repeat"
-        style={{ backgroundImage: 'url(https://lh3.googleusercontent.com/aida-public/AB6AXuDoC5lkcD5CkaHT_Ecq92QoS0Dkt-F8gnMoV_IeL2PbRjthtTPCivYksqMj4HtNZHZ8d5bqHuJMBdCsrjvFNC3mxQNarOvLprVhWY9U1rPzZ6F6jD3j0OCI7NjKeh1NFh0jbeG8bMRGef9K38Htu7MJVGYAECaQxqBcdGq96U3PDIMohLZ3VLVuK9jMLGoviFOK7DZwjAOLILYDDltHz79YenBC0kHcOCpz_GSjDsq3nzcN_Fsit-cxG_0rzXa7PkOTLg7tZ3lv4Mw)' }}
+        style={{ backgroundImage: 'url(/textures/paper.webp)' }}
       ></div>
 
       {/* Clear Layer */}
